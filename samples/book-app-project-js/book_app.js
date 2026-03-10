@@ -47,7 +47,7 @@ async function handleAdd() {
   try {
     const year = yearStr ? parseInt(yearStr, 10) : 0;
     if (isNaN(year)) {
-      throw new Error("Year must be a number.");
+      throw new Error("That doesn't look like a year. Please enter a number, like 1999.");
     }
     collection.addBook(title, author, year);
     console.log("\nBook added successfully.\n");
@@ -73,6 +73,39 @@ async function handleFind() {
   showBooks(books);
 }
 
+async function handleRead() {
+  // Parse: read "Book Title"
+  const args = process.argv.slice(2);
+  if (args.length < 2) {
+    console.log("\nUsage: read \"Book Title\"\n");
+    return;
+  }
+  // Support quoted or unquoted title
+  let title = args.slice(1).join(" ");
+  if ((title.startsWith('"') && title.endsWith('"')) || (title.startsWith("'") && title.endsWith("'"))) {
+    title = title.slice(1, -1);
+  }
+  const success = collection.markAsRead(title);
+  if (success) {
+    console.log(`\nMarked as read: "${title}"\n`);
+  } else {
+    console.log(`\nBook not found: "${title}"\n`);
+  }
+}
+
+async function handleMarkAsRead(title) {
+  try {
+    const result = collection.markAsRead(title);
+    if (result) {
+      console.log(`\nMarked '${title}' as read.\n`);
+    } else {
+      console.log(`\nError: Book titled '${title}' not found.\n`);
+    }
+  } catch (err) {
+    console.log(`\nError: ${err.message}\n`);
+  }
+}
+
 function showHelp() {
   console.log(`
 Book Collection Helper
@@ -82,6 +115,7 @@ Commands:
   add      - Add a new book
   remove   - Remove a book by title
   find     - Find books by author
+  read     - Mark a book as read by title. Usage: read "Book Title" (quotes required if the title has spaces)
   help     - Show this help message
 `);
 }
@@ -108,6 +142,17 @@ async function main() {
       break;
     case "find":
       await handleFind();
+      break;
+    case "read":
+      await handleRead();
+      break;
+    case "markread":
+      if (args[1]) {
+        await handleMarkAsRead(args[1]);
+      } else {
+        const title = await prompt("Enter the title of the book to mark as read: ");
+        await handleMarkAsRead(title);
+      }
       break;
     case "help":
       showHelp();
